@@ -30,7 +30,6 @@ export default class AsteroidMainScene extends Phaser.Scene {
   private scoreText: Phaser.GameObjects.Text;
   private socket: Socket;
   private gameId: string;
-  private playerId: string;
   private players: Record<string, Player>;
 
   constructor() {
@@ -42,7 +41,6 @@ export default class AsteroidMainScene extends Phaser.Scene {
   public init(data) {
     this.gameId = data.gameId;
     this.players = data.players;
-    this.playerId = data.playerId;
     this.socket = data.socket;
   }
 
@@ -58,8 +56,6 @@ export default class AsteroidMainScene extends Phaser.Scene {
   }
 
   public async create() {
-    this.initSocketHandlers();
-
     // Draw world
     this.add.image(0, 0, 'sky').setOrigin(0, 0);
     this.scoreText = this.add.text(16, 16, `score: ${this.score}`, {
@@ -88,6 +84,7 @@ export default class AsteroidMainScene extends Phaser.Scene {
     this.createPlayer(platforms);
     this.createStars(platforms);
     this.createBombs(platforms);
+    this.initSocketHandlers();
 
     this.createAnimations();
   }
@@ -238,7 +235,10 @@ export default class AsteroidMainScene extends Phaser.Scene {
   }
 
   initSocketHandlers() {
-    this.socket.on('connect_player', (player) => {
+    const id = localStorage.getItem('id');
+    this.socket.emit('get_player', id);
+    this.socket.on('player', (player) => {
+      console.log('player', player);
       this.score = player.score;
       this.player.setPosition(player.x, player.y);
       this.player.setVisible(true);
