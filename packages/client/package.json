@@ -14,7 +14,7 @@
   "dependencies": {
     "mongodb-stitch-browser-sdk": "^4.8.0",
     "phaser": "^3.55.2",
-    "socket.io": "^4.1.2"
+    "socket.io-client": "^4.1.2"
   },
   "scripts": {
     "build": "webpack",
