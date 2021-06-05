@@ -1,4 +1,5 @@
 import * as Phaser from 'phaser';
+import { Socket } from 'socket.io-client';
 import { Player } from '../types';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
@@ -25,15 +26,16 @@ export default class AsteroidMainScene extends Phaser.Scene {
   }>;
   private direction: 'right' | 'left';
   private waitCounter: number;
-  private starCount: number;
+  private score: number;
   private scoreText: Phaser.GameObjects.Text;
+  private socket: Socket;
   private gameId: string;
   private playerId: string;
   private players: Record<string, Player>;
 
   constructor() {
     super(sceneConfig);
-    this.starCount = 0;
+    this.score = 0;
     this.waitCounter = WAIT_TIME;
   }
 
@@ -41,7 +43,7 @@ export default class AsteroidMainScene extends Phaser.Scene {
     this.gameId = data.gameId;
     this.players = data.players;
     this.playerId = data.playerId;
-    console.log('data', data);
+    this.socket = data.socket;
   }
 
   public preload() {
@@ -56,11 +58,11 @@ export default class AsteroidMainScene extends Phaser.Scene {
   }
 
   public async create() {
-    const { width, height } = this.scale;
+    this.initSocketHandlers();
 
     // Draw world
     this.add.image(0, 0, 'sky').setOrigin(0, 0);
-    this.scoreText = this.add.text(16, 16, `score: ${this.starCount}`, {
+    this.scoreText = this.add.text(16, 16, `score: ${this.score}`, {
       fontSize: '32px',
       // @ts-ignore
       fill: '#000',
@@ -83,11 +85,7 @@ export default class AsteroidMainScene extends Phaser.Scene {
     platforms.create(750, 220, 'ground');
 
     // Draw players
-    this.player = this.physics.add.sprite(0, 0, 'dude');
-    this.player.setBounce(0.2);
-    this.player.setCollideWorldBounds(true);
-    this.physics.add.collider(this.player, platforms);
-
+    this.createPlayer(platforms);
     this.createStars(platforms);
     this.createBombs(platforms);
 
@@ -185,8 +183,8 @@ export default class AsteroidMainScene extends Phaser.Scene {
       (player, star) => {
         //@ts-ignore
         star.disableBody(true, true);
-        this.starCount++;
-        this.scoreText.setText(`Score: ${this.starCount}`);
+        this.score++;
+        this.scoreText.setText(`Score: ${this.score}`);
 
         if (this.stars.countActive(true) === 0) {
           this.stars.children.iterate(function (child) {
@@ -229,5 +227,21 @@ export default class AsteroidMainScene extends Phaser.Scene {
       null,
       this
     );
+  }
+
+  createPlayer(platforms) {
+    this.player = this.physics.add.sprite(0, 0, 'dude');
+    this.player.setVisible(false);
+    this.player.setBounce(0.2);
+    this.player.setCollideWorldBounds(true);
+    this.physics.add.collider(this.player, platforms);
+  }
+
+  initSocketHandlers() {
+    this.socket.on('connect_player', (player) => {
+      this.score = player.score;
+      this.player.setPosition(player.x, player.y);
+      this.player.setVisible(true);
+    });
   }
 }

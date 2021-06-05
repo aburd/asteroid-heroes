@@ -1,9 +1,11 @@
 import * as Phaser from 'phaser';
+import { io, Socket } from 'socket.io-client';
 import AsteroidMain from './scenes/AsteroidMain';
 
 class Game {
   public phaserConfig: Phaser.Types.Core.GameConfig;
   private game: Phaser.Game;
+  private socket: Socket;
 
   constructor(
     config = {
@@ -28,28 +30,30 @@ class Game {
       },
       backgroundColor: '#000000',
     };
+    this.socket = io();
+    this.socket.on('connect', () => {
+      console.log('Connected to server with id:', this.socket.id);
+      const id = localStorage.getItem('id');
+      this.socket.emit('create_player');
+    });
+    this.socket.on('disconnect', () => {
+      console.log('Disconnected from server');
+    });
   }
   async joinOrCreateGame(id) {
     try {
-      // let result = await this.joinGame(id);
-      await this.createGame(id);
+      let result = await this.joinGame(id);
+      if (!result) {
+        await this.createGame(id);
+      }
     } catch (e) {
       console.error(e);
     }
   }
-  // async joinGame(id) {
-  //   try {
-  //     const playerId = this.getPlayerId();
-  //     this.game = new Phaser.Game(this.phaserConfig);
-  //     this.game.scene.start('asteroidMain', {
-  //       playerId: this.getPlayerId(),
-  //       gameId: id,
-  //       players: {},
-  //     });
-  //   } catch (e) {
-  //     console.error(e);
-  //   }
-  // }
+  async joinGame(id): Promise<boolean> {
+    // todo: check for game
+    return false;
+  }
   playerInGame(game) {
     const playerId = this.getPlayerId();
     return Boolean(game.players[playerId]);
@@ -64,6 +68,7 @@ class Game {
         playerId: this.getPlayerId(),
         gameId: id,
         players: {},
+        socket: this.socket,
       });
       return { gameId: id };
     } catch (e) {
