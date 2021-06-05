@@ -1,0 +1,22 @@
+{
+  "name": "client",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "copy-webpack-plugin": "^9.0.0",
+    "ts-loader": "^9.2.2",
+    "typescript": "^4.3.2",
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.0",
+    "webpack-dev-server": "^3.11.2"
+  },
+  "dependencies": {
+    "mongodb-stitch-browser-sdk": "^4.8.0",
+    "phaser": "^3.55.2"
+  },
+  "scripts": {
+    "build": "webpack",
+    "dev": "webpack serve"
+  }
+}
