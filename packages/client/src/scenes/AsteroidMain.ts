@@ -1,5 +1,4 @@
 import * as Phaser from 'phaser';
-import { RemoteMongoCollection } from 'mongodb-stitch-browser-sdk';
 import { Player } from '../types';
 
 const sceneConfig: Phaser.Types.Scenes.SettingsConfig = {
@@ -29,27 +28,17 @@ export default class AsteroidMainScene extends Phaser.Scene {
   private starCount: number;
   private scoreText: Phaser.GameObjects.Text;
   private gameId: string;
-  private collection: RemoteMongoCollection<any>;
-  private authId: string;
-  private ownerId: string;
   private playerId: string;
   private players: Record<string, Player>;
-  private otherPlayers: Phaser.Physics.Arcade.Group;
-  private updating: boolean;
-  private lastUpdate: any;
 
   constructor() {
     super(sceneConfig);
     this.starCount = 0;
     this.waitCounter = WAIT_TIME;
-    this.updating = false;
   }
 
   public init(data) {
     this.gameId = data.gameId;
-    this.collection = data.collection;
-    this.authId = data.authId;
-    this.ownerId = data.ownerId;
     this.players = data.players;
     this.playerId = data.playerId;
     console.log('data', data);
@@ -93,32 +82,14 @@ export default class AsteroidMainScene extends Phaser.Scene {
     platforms.create(50, 250, 'ground');
     platforms.create(750, 220, 'ground');
 
-    this.createOtherPlayers(platforms);
-
     // Draw players
-    Object.keys(this.players).forEach(async (id) => {
-      const player = this.players[id];
-      const { x, y } = player;
-      if (id === this.playerId) {
-        this.player = this.physics.add.sprite(x, y, 'dude');
-        this.player.setBounce(0.2);
-        this.player.setCollideWorldBounds(true);
-        this.physics.add.collider(this.player, platforms);
-      } else {
-        console.log(x, y, id);
-        this.createOtherPlayer(x, y);
-      }
-    });
+    this.player = this.physics.add.sprite(0, 0, 'dude');
+    this.player.setBounce(0.2);
+    this.player.setCollideWorldBounds(true);
+    this.physics.add.collider(this.player, platforms);
 
     this.createStars(platforms);
     this.createBombs(platforms);
-
-    const stream = await this.collection.watch({
-      'fullDocument._id': this.gameId,
-    });
-    stream.onNext((event) => {
-      console.log(event);
-    });
 
     this.createAnimations();
   }
@@ -159,45 +130,10 @@ export default class AsteroidMainScene extends Phaser.Scene {
     if (keyPressed) {
       this.waitCounter = WAIT_TIME;
     }
-    this.updatePlayerDB();
   }
 
   addKeys<K extends Record<string, string>>(keys: K): KeyMap<K> {
     return this.input.keyboard.addKeys(keys) as KeyMap<K>;
-  }
-
-  updatePlayerDB() {
-    const { x, y } = this.player.getCenter();
-
-    const update = {
-      x: Math.floor(x),
-      y: Math.floor(y),
-      id: this.playerId,
-    };
-    if (
-      this.updating ||
-      (this.lastUpdate?.x === update.x && this.lastUpdate?.y === update.y)
-    )
-      return;
-
-    this.updating = true;
-    this.lastUpdate = update;
-    this.collection
-      .updateOne(
-        {
-          owner_id: this.authId,
-          _id: this.gameId,
-        },
-        {
-          $set: {
-            [`players.${this.playerId}`]: update,
-          },
-        }
-      )
-      .then((result) => {
-        console.log(result);
-        this.updating = false;
-      });
   }
 
   createAnimations() {
@@ -293,16 +229,5 @@ export default class AsteroidMainScene extends Phaser.Scene {
       null,
       this
     );
-  }
-
-  createOtherPlayers(platforms: Phaser.Physics.Arcade.StaticGroup) {
-    this.otherPlayers = this.physics.add.group();
-    this.physics.add.collider(this.otherPlayers, platforms);
-  }
-
-  createOtherPlayer(x, y) {
-    const otherPlayer = this.otherPlayers.create(x, y, 'dude');
-    otherPlayer.setBounce(0.2);
-    otherPlayer.setCollideWorldBounds(true);
   }
 }
