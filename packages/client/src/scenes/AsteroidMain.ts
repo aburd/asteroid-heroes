@@ -238,7 +238,7 @@ export default class AsteroidMainScene extends Phaser.Scene {
     const id = localStorage.getItem('id');
     this.socket.emit('get_player', id);
     this.socket.on('player', (player) => {
-      console.log('player', player);
+      localStorage.setItem('id', player.id);
       this.score = player.score;
       this.player.setPosition(player.x, player.y);
       this.player.setVisible(true);

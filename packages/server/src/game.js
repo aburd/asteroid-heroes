@@ -55,6 +55,7 @@ function createGame(id) {
 }
 
 function handleCreateGame(socket, state, id) {
+  console.log('id', id);
   const newGame = createGame(id);
 
   state.games = {

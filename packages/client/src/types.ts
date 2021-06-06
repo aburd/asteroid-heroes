@@ -3,3 +3,8 @@ export interface Player {
   x: number;
   y: number;
 }
+
+export interface SocketGameRes {
+  id: string;
+  players: Record<string, Player>;
+}
