@@ -19,69 +19,46 @@ export default class Login extends Phaser.Scene {
 
   preload() {
     this.load.html('nameform', './assets/dom/login.html');
+    this.load.image('sky', './assets/sky.png');
   }
 
   create() {
+    this.add.image(0, 0, 'sky').setOrigin(0, 0);
     var text = this.createLoginMessage();
 
-    var element = this.add.dom(400, 600).createFromCache('nameform');
-    console.log('element', element);
-    // element.setPerspective(800);
-    element.addListener('click');
+    this.add
+      .dom(this.scale.width / 2, this.scale.height / 2)
+      .createFromCache('nameform');
+    const id = localStorage.getItem('id');
+    var inputGameId: HTMLInputElement =
+      document.querySelector('[name="gameid"]');
+    var inputUsername: HTMLInputElement =
+      document.querySelector('[name="username"]');
+    if (id) {
+      inputUsername.value = id;
+    }
+    const loginBtn = document.querySelector('[name="loginButton"]');
 
-    element.on('click', function (event) {
-      if (event.target.name === 'loginButton') {
-        var inputUsername = this.getChildByName('username');
-        var inputGameId = this.getChildByName('gameid');
-
-        if (!(inputUsername.value && inputGameId.value)) {
-          //  Flash the prompt
-          this.scene.tweens.add({
-            targets: text,
-            alpha: 0.1,
-            duration: 200,
-            ease: 'Power3',
-            yoyo: true,
-          });
-          return;
-        }
-
-        //  Turn off the click events
-        this.removeListener('click');
-
-        //  Tween the login form out
-        this.scene.tweens.add({
-          targets: element.rotate3d,
-          x: 1,
-          w: 90,
-          duration: 3000,
+    loginBtn.addEventListener('click', (event) => {
+      if (!(inputGameId.value && inputUsername.value)) {
+        this.tweens.add({
+          targets: text,
+          alpha: 0.1,
+          duration: 200,
           ease: 'Power3',
+          yoyo: true,
         });
-
-        this.scene.tweens.add({
-          targets: element,
-          scaleX: 2,
-          scaleY: 2,
-          y: 700,
-          duration: 3000,
-          ease: 'Power3',
-          onComplete: () => element.setVisible(false),
-        });
-
-        //  Populate the text with whatever they typed in as the username!
-        text.setText('Welcome ' + inputUsername.value);
+        text.setText(`Must add a Game ID and Username to continue`);
+        return;
       }
-    });
 
-    this.tweens.add({
-      targets: element,
-      y: 300,
-      duration: 3000,
-      ease: 'Power3',
+      //  Populate the text with whatever they typed in as the username!
+      text.setText(`Logged in as ${inputUsername.value}`);
+      this.gameSetup();
     });
   }
 
-  socketSetup() {
+  gameSetup() {
     if (!this.socket)
       throw new Error(
         'Socket not available for connecting to game server in Login screen'
@@ -91,6 +68,7 @@ export default class Login extends Phaser.Scene {
     this.socket.emit('get_game', 'aburd');
 
     this.socket.on('game', async (gameData: SocketGameRes) => {
+      console.log({ gameData });
       this.scene.start('asteroidMain', {
         socket: this.socket,
         gameId: gameData.id,
